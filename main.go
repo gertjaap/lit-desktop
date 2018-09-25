@@ -13,7 +13,7 @@ import (
 	"github.com/asticode/go-astilectron"
 	"github.com/asticode/go-astilectron-bootstrap"
 	"github.com/asticode/go-astilog"
-	"github.com/mit-dci/lit/btcutil/btcec"
+	"github.com/mit-dci/lit/crypto/koblitz"
 	"github.com/mit-dci/lit/litrpc"
 	"github.com/mit-dci/lit/lnutil"
 	"github.com/pkg/errors"
@@ -119,13 +119,16 @@ func initProxy(con, homeDir string) {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		key, _ := btcec.PrivKeyFromBytes(btcec.S256(), privKey[:])
+		key, pubKey := koblitz.PrivKeyFromBytes(koblitz.S256(), privKey[:])
+
 		adr := fmt.Sprintf("%s@%s:%d", adr, host, port)
+		fmt.Printf("Connecting to %s using pubkey %x\n", adr, pubKey.SerializeCompressed())
 		lndcRpcClient, err = litrpc.NewLndcRpcClient(adr, key)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
 	}
+
 	proxy := litrpc.NewLndcRpcWebsocketProxyWithLndc(lndcRpcClient)
 	go proxy.Listen("localhost", 49586)
 }
