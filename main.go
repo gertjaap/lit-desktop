@@ -117,9 +117,6 @@ func initProxy(con, homeDir string) {
 			log.Fatal(err.Error())
 		}
 	} else {
-		if !lnutil.LitAdrOK(adr) {
-			log.Fatal("lit address passed in -con parameter is not valid")
-		}
 
 		keyFilePath := filepath.Join(homeDir, "lit-af-key.hex")
 		privKey, err := lnutil.ReadKeyFile(keyFilePath)
@@ -128,11 +125,20 @@ func initProxy(con, homeDir string) {
 		}
 		key, pubKey := koblitz.PrivKeyFromBytes(koblitz.S256(), privKey[:])
 
-		adr := fmt.Sprintf("%s@%s:%d", adr, host, port)
-		fmt.Printf("Connecting to %s using pubkey %x\n", adr, pubKey.SerializeCompressed())
-		lndcRpcClient, err = litrpc.NewLndcRpcClient(adr, key)
-		if err != nil {
-			log.Fatal(err.Error())
+		if adr == "null" {
+			proxy := litrpc.NewUnconnectedLndcRpcWebsocketProxy(privKey[:])
+			go proxy.Listen("localhost", uint16(*localPort))
+			return
+		} else {
+			if !lnutil.LitAdrOK(adr) {
+				log.Fatal("lit address passed in -con parameter is not valid")
+			}
+			adr := fmt.Sprintf("%s@%s:%d", adr, host, port)
+			fmt.Printf("Connecting to %s using pubkey %x\n", adr, pubKey.SerializeCompressed())
+			lndcRpcClient, err = litrpc.NewLndcRpcClient(adr, key)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
 		}
 	}
 
